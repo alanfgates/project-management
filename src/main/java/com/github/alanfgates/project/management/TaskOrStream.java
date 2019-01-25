@@ -2,9 +2,9 @@ package com.github.alanfgates.project.management;
 
 import java.io.Serializable;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
 
 abstract class TaskOrStream implements Serializable {
 
@@ -51,8 +51,8 @@ abstract class TaskOrStream implements Serializable {
     return lastModified;
   }
 
-  Set<TaskOrStream> getAllChildren() {
-    Set<TaskOrStream> all = new HashSet<>();
+  Collection<TaskOrStream> getAllChildren() {
+    List<TaskOrStream> all = new ArrayList<>();
     all.addAll(getStreams());
     all.addAll(getTasks());
     return all;

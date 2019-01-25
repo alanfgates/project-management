@@ -23,8 +23,12 @@ class Link implements Serializable {
     return url;
   }
 
+  static LinkType parseLinkType(String linkType) throws IllegalArgumentException {
+    return LinkType.valueOf(linkType.toUpperCase());
+  }
+
   @Override
   public String toString() {
-    return "type: " + type + " url: " + url;
+    return "type: " + type.name().toLowerCase().replace('_', ' ') + " url: " + url;
   }
 }

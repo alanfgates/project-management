@@ -10,12 +10,14 @@ import org.apache.commons.cli.ParseException;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Set;
 
 public class Repl {
 
@@ -37,7 +39,7 @@ public class Repl {
     while (true) {
       boolean changed = false;
       try {
-        System.out.print(current.getName() + ": ");
+        tree(current, 0);
         String command = input.readLine().toLowerCase();
         if (command.length() == 0) {
           continue;
@@ -51,6 +53,9 @@ public class Repl {
           help();
         } else if (command.equals("l")) {
           list();
+        } else if (current instanceof Task && command.equals("m")) {
+          markDone();
+          changed = true;
         } else if (command.equals("p")) {
           parent();
         } else if (command.equals("q")) {
@@ -71,6 +76,17 @@ public class Repl {
     }
   }
 
+  private void tree(TaskOrStream node, int level) {
+    for (int i = 0; i < level; i++) System.out.print("    ");
+    System.out.println(node.getName());
+    if (node instanceof WorkStream) {
+      List<TaskOrStream> children = new ArrayList<>(node.getAllChildren());
+      children.sort(Comparator.comparing(TaskOrStream::getName));
+      for (TaskOrStream child : node.getAllChildren()) tree(child, level + 1);
+    }
+
+  }
+
   private boolean add() throws IOException {
     WorkStream currentStream = (WorkStream) current;
     System.out.print("Substream or task[s/t]?");
@@ -89,10 +105,8 @@ public class Repl {
       ((WorkStream) current).addTask(task);
       String description = getInput("Description");
       task.setDescription(description);
-      task.setDueBy(getDateTime("Due By"));
-      String priority = getInput("Priority");
-      if (priority.length() > 0) task.setPriority(Priority.valueOf(priority));
-      System.out.println();
+      task.setDueBy(getDueBy());
+      task.setPriority(getPriority());
       return true;
     } else {
       System.err.println("I don't know how to add a " + command);
@@ -104,22 +118,23 @@ public class Repl {
     pickChildFromOptions(current.getAllChildren());
   }
 
-  private void pickChildFromOptions(Set<TaskOrStream> options) throws IOException {
+  private void pickChildFromOptions(Collection<TaskOrStream> options) throws IOException {
     System.out.print("Enter name of child to select (");
     for (TaskOrStream child : options) System.out.print(child.getName() + " ");
     System.out.print(")? ");
     String name = input.readLine();
     System.out.println();
+    List<TaskOrStream> possibilities = new ArrayList<>();
     for (TaskOrStream option : options) {
-      if (!option.getName().startsWith(name)) options.remove(option);
+      if (option.getName().startsWith(name)) possibilities.add(option);
     }
-    if (options.size() == 0) {
+    if (possibilities.size() == 0) {
       System.err.println(name + " does not refer to any child of this node");
-    } else if (options.size() > 1) {
+    } else if (possibilities.size() > 1) {
       System.out.println("Ambiguous, keep going");
-      pickChildFromOptions(options);
+      pickChildFromOptions(possibilities);
     } else {
-      current = options.iterator().next();
+      current = possibilities.get(0);
     }
   }
 
@@ -132,6 +147,7 @@ public class Repl {
     if (reponse.toLowerCase().startsWith("y")) {
       try {
         current.delete();
+        parent();
         return true;
       } catch (StreamNotEmptyException e) {
         System.err.println("Node " + current.getName() + " is not empty and cannot be deleted");
@@ -163,16 +179,14 @@ public class Repl {
     } else if (current instanceof Task) {
       Task task = (Task)current;
       if (field.equals("p")) {
-        String priority = getInput("Priority");
-        task.setPriority(Priority.valueOf(priority));
+        task.setPriority(getPriority());
         return true;
       } else if (field.equals("u")) {
-        task.setDueBy(getDateTime("Due By"));
+        task.setDueBy(getDueBy());
         return true;
       } else if (field.equals("al")) {
-        String type = getInput("Link type");
-        String link = getInput("URL");
-        task.addLink(new Link(Link.LinkType.valueOf(type), new URL(link)));
+        Link link = getLink();
+        if (link != null) task.addLink(link);
         return true;
       } else if (field.equals("rl")) {
         String num = getInput("Link number to remove");
@@ -196,6 +210,7 @@ public class Repl {
     System.out.println("e: edit this node");
     System.out.println("h or ?: print this");
     System.out.println("l: list (describe) this node");
+    if (current instanceof Task) System.out.println("m: mark done");
     System.out.println("p: move to parent node");
     System.out.println("q: quit");
     if (current instanceof WorkStream) {
@@ -206,29 +221,35 @@ public class Repl {
   }
 
   private void list() {
-    list(current);
-  }
-
-  private void list(TaskOrStream node) {
-    System.out.println("Name: " + node.getName());
-    System.out.println("Description: " + node.getDescription());
-    System.out.println("Created At: " + node.getCreatedAt().toString());
-    System.out.println("Last Modified: " + node.getLastModified().toString());
-    if (node instanceof WorkStream) {
+    System.out.println("Name: " + current.getName());
+    System.out.println("Description: " + current.getDescription());
+    System.out.println("Created At: " + current.getCreatedAt().toString());
+    System.out.println("Last Modified: " + current.getLastModified().toString());
+    if (current instanceof WorkStream) {
       System.out.print("Substreams: ");
-      for (WorkStream stream : node.getStreams()) System.out.print(stream.getName() + " ");
+      for (WorkStream stream : current.getStreams()) System.out.print(stream.getName() + " ");
       System.out.println();
       System.out.print("Tasks: ");
-      for (Task task : node.getTasks()) System.out.print(task.getName() + " ");
+      for (Task task : current.getTasks()) System.out.print(task.getName() + " ");
       System.out.println();
-    } else if (node instanceof Task) {
-      Task currentTask = (Task)node;
-      System.out.println("Due By: " + currentTask.getDueBy().toString());
-      System.out.println("Priority: " + currentTask.getPriority());
-      System.out.print("Links: ");
-      for (Link link : currentTask.getLinks()) System.out.print(link + " ");
+    } else if (current instanceof Task) {
+      Task currentTask = (Task)current;
+      LocalDate dueBy = currentTask.getDueBy();
+      if (dueBy != null) System.out.println("Due By: " + dueBy.toString());
+      Priority priority = currentTask.getPriority();
+      if (priority != null) System.out.println("Priority: " + priority.name().toLowerCase());
+      List<Link> links = currentTask.getLinks();
+      if (links.size() > 0) {
+        System.out.print("Links: ");
+        for (Link link : currentTask.getLinks()) System.out.print(link + " ");
+      }
       System.out.println();
     }
+  }
+
+  private void markDone() {
+    ((Task)current).markDone();
+    parent();
   }
 
   private void parent() {
@@ -238,13 +259,18 @@ public class Repl {
   private void allTasksByDueDate() {
     List<Task> tasks = new ArrayList<>(current.getAllTasks());
     tasks.sort(Comparator.comparing(Task::getDueBy));
-    for (Task task : tasks) list(task);
+    for (Task task : tasks) System.out.println(task.getName() + " " + task.getDueBy());
   }
 
   private void allTasksByPriority() {
     List<Task> tasks = new ArrayList<>(current.getAllTasks());
     tasks.sort(Comparator.comparing(Task::getPriority));
-    for (Task task : tasks) list(task);
+    for (Task task : tasks) {
+      System.out.print(task.getName() + " ");
+      Priority p = task.getPriority();
+      if (p != null) System.out.print(p.name().toLowerCase());
+      System.out.println();
+    }
   }
 
   private String getInput(String prompt) throws IOException {
@@ -252,27 +278,43 @@ public class Repl {
     return input.readLine();
   }
 
-  private LocalDate getDateTime(String prompt) throws IOException {
-    String date = getInput(prompt).toLowerCase();
-    if (date.length() == 0) return null;
-    if (date.startsWith("tod")) {
-      return LocalDate.now();
-    } else if (date.startsWith("tom")) {
-      return LocalDate.now().plusDays(1);
-    } else  {
-      // Assume it's of the form mm/dd
-      try {
-        LocalDate now = LocalDate.now();
-        int month = Integer.valueOf(date.substring(0, 3));
-        int day = Integer.valueOf(date.substring(3));
-        int year = now.getYear();
-        if (month < now.getMonthValue()) year++;
-        return LocalDate.of(year, month, day);
-      } catch (NumberFormatException e) {
-        System.err.println("Cannot parse " + date + ", please use 'today', 'tomorrow', or mm/dd");
-        return getDateTime(prompt);
-      }
+  private LocalDate getDueBy() throws IOException {
+    String date = getInput("Due By").toLowerCase();
+    try {
+      return Task.parseDateString(date);
+    } catch (IllegalArgumentException e) {
+      System.err.println(e.getMessage());
+      return getDueBy();
     }
+  }
+
+  private Priority getPriority() throws IOException {
+    String priority = getInput("Priority");
+    try {
+      return Task.parsePriorityString(priority);
+    } catch (IllegalArgumentException e) {
+      System.err.println("Don't know priority " + priority + ", valid values are 'high', 'low', 'medium'");
+      return getPriority();
+    }
+  }
+
+  private Link getLink() throws IOException {
+    String linkTypeStr = getInput("Link Type");
+    if (linkTypeStr.length() == 0) return null;
+    try {
+      Link.LinkType linkType = Link.parseLinkType(linkTypeStr);
+      String urlString = getInput("URL");
+      URL url = new URL(urlString);
+      return new Link(linkType, url);
+
+    } catch (IllegalArgumentException e) {
+      System.err.print("Unknown Link Type " + linkTypeStr + ", valid values are: ");
+      for (Link.LinkType type : Link.LinkType.values()) System.err.print(type.name().toLowerCase() + " ");
+      System.err.println();
+    } catch (MalformedURLException e) {
+      System.err.println("Bad URL: " + e.getMessage());
+    }
+    return getLink();
   }
 
   public static void main(String[] args) {

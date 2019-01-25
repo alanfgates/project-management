@@ -37,8 +37,9 @@ class WorkStream extends TaskOrStream {
   void delete() throws StreamNotEmptyException {
     if (substreams.isEmpty() && tasks.isEmpty()) {
       parent.substreams.remove(this);
+    } else {
+      throw new StreamNotEmptyException("Stream " + name + " is not empty and cannot be removed.");
     }
-    throw new StreamNotEmptyException("Stream " + name + " is not empty and cannot be removed.");
   }
 
   @Override
@@ -54,7 +55,7 @@ class WorkStream extends TaskOrStream {
   @Override
   Collection<Task> getAllTasks() {
     List<Task> allTasks = new ArrayList<>();
-    for (WorkStream stream : substreams) allTasks.addAll(getAllTasks());
+    for (WorkStream stream : substreams) allTasks.addAll(stream.getAllTasks());
     allTasks.addAll(tasks);
     return allTasks;
   }
