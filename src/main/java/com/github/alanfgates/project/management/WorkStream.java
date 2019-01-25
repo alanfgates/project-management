@@ -7,10 +7,17 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-class WorkStream extends TaskOrStream {
+public class WorkStream extends TaskOrStream {
 
   private Set<WorkStream> substreams;
   private Set<Task> tasks;
+
+  /**
+   * For Jackson
+   */
+  public WorkStream() {
+
+  }
 
   WorkStream(WorkStream parent, String name) {
     super(parent, name);
@@ -20,12 +27,22 @@ class WorkStream extends TaskOrStream {
 
   void addStream(WorkStream stream) {
     substreams.add(stream);
-    lastModified = LocalDate.now();
+  }
+
+  public Set<WorkStream> getSubstreams() {
+    return substreams;
+  }
+
+  public void setSubstreams(Set<WorkStream> substreams) {
+    this.substreams = substreams;
+  }
+
+  public void setTasks(Set<Task> tasks) {
+    this.tasks = tasks;
   }
 
   void addTask(Task task) {
     tasks.add(task);
-    lastModified = LocalDate.now();
   }
 
   // Only for use by Task, do not call directly.
@@ -48,7 +65,7 @@ class WorkStream extends TaskOrStream {
   }
 
   @Override
-  Collection<Task> getTasks() {
+  public Collection<Task> getTasks() {
     return tasks;
   }
 

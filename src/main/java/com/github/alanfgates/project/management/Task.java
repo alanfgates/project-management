@@ -6,24 +6,34 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-class Task extends TaskOrStream {
+public class Task extends TaskOrStream {
 
   private List<Link> links;
   private LocalDate dueBy;
   private Priority priority;
+
+  /**
+   * For Jackson
+   */
+  public Task() {
+
+  }
 
   Task(WorkStream parent, String name) {
     super(parent, name);
     links = new ArrayList<>();
   }
 
-  List<Link> getLinks() {
+  public List<Link> getLinks() {
     return links;
   }
 
   void addLink(Link link) {
     links.add(link);
-    lastModified = LocalDate.now();
+  }
+
+  public void setLinks(List<Link> links) {
+    this.links = links;
   }
 
   LocalDate getDueBy() {
@@ -32,7 +42,20 @@ class Task extends TaskOrStream {
 
   void setDueBy(LocalDate dueBy) {
     this.dueBy = dueBy;
-    lastModified = LocalDate.now();
+  }
+
+  /**
+   * For Jackson
+   */
+  public String getDueDate() {
+    return dueBy.toString();
+  }
+
+  /**
+   * For Jackson
+   */
+  public void setDueDate(String text) {
+    dueBy = LocalDate.parse(text);
   }
 
   static LocalDate parseDateString(String date) throws IllegalArgumentException {
@@ -59,7 +82,7 @@ class Task extends TaskOrStream {
     return null;
   }
 
-  Priority getPriority() {
+  public Priority getPriority() {
     return priority;
   }
 
@@ -68,9 +91,8 @@ class Task extends TaskOrStream {
     return Priority.valueOf(priority.toUpperCase());
   }
 
-  void setPriority(Priority priority) {
+  public void setPriority(Priority priority) {
     this.priority = priority;
-    lastModified = LocalDate.now();
   }
 
   void markDone() {

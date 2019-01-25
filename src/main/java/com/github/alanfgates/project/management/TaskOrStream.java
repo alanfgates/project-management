@@ -6,49 +6,66 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-abstract class TaskOrStream implements Serializable {
+public abstract class TaskOrStream implements Serializable {
 
-  protected final WorkStream parent;
+  protected WorkStream parent;
   protected String name;
   protected String description;
   protected LocalDate createdAt;
-  protected LocalDate lastModified;
+
+  /**
+   * For jackson
+   */
+  public  TaskOrStream() {
+
+  }
 
   protected TaskOrStream(WorkStream parent, String name) {
     this.parent = parent;
     this.name = name;
     createdAt = LocalDate.now();
-    lastModified = createdAt;
   }
 
   WorkStream getParent() {
     return parent;
   }
 
-  String getName() {
+  void setParent(WorkStream parent) {
+    this.parent = parent;
+  }
+
+  public String getName() {
     return name;
   }
 
-  void setName(String name) {
+  public void setName(String name) {
     this.name = name;
-    lastModified = LocalDate.now();
   }
 
-  String getDescription() {
+  public String getDescription() {
     return description;
   }
 
-  void setDescription(String description) {
+  public void setDescription(String description) {
     this.description = description;
-    lastModified = LocalDate.now();
   }
 
   LocalDate getCreatedAt() {
     return createdAt;
   }
 
-  LocalDate getLastModified() {
-    return lastModified;
+  /**
+   * For Jackson
+   */
+  public String getCreationTime() {
+    return createdAt.toString();
+  }
+
+  /**
+   * For Jackson
+   */
+  public void setCreationTime(String text) {
+    createdAt = LocalDate.parse(text);
   }
 
   Collection<TaskOrStream> getAllChildren() {

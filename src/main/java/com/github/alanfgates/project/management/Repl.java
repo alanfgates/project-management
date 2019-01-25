@@ -15,7 +15,6 @@ import java.net.URL;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
@@ -43,8 +42,12 @@ public class Repl {
         String command = input.readLine().toLowerCase();
         if (command.length() == 0) {
           continue;
-        } else if (current instanceof WorkStream && command.equals("a")) {
-          changed = add();
+        } else if (current instanceof WorkStream && command.equals("as")) {
+          addStream();
+          changed = true;
+        } else if (current instanceof WorkStream && command.equals("at")) {
+          addTask();
+          changed = true;
         } else if (command.equals("d")) {
           changed = delete();
         } else if (command.equals("e")) {
@@ -82,36 +85,29 @@ public class Repl {
     if (node instanceof WorkStream) {
       List<TaskOrStream> children = new ArrayList<>(node.getAllChildren());
       children.sort(Comparator.comparing(TaskOrStream::getName));
-      for (TaskOrStream child : node.getAllChildren()) tree(child, level + 1);
+      for (TaskOrStream child : children) tree(child, level + 1);
     }
 
   }
 
-  private boolean add() throws IOException {
+  private void addStream() throws IOException {
     WorkStream currentStream = (WorkStream) current;
-    System.out.print("Substream or task[s/t]?");
-    String command = input.readLine().toLowerCase();
-    System.out.println();
-    if (command.equals("s")) {
-      String name = getInput("Name");
-      WorkStream substream = new WorkStream(currentStream, name);
-      ((WorkStream) current).addStream(substream);
-      String description = getInput("Description");
-      substream.setDescription(description);
-      return true;
-    } else if (command.equals("t")) {
-      String name = getInput("Name");
-      Task task = new Task(currentStream, name);
-      ((WorkStream) current).addTask(task);
-      String description = getInput("Description");
-      task.setDescription(description);
-      task.setDueBy(getDueBy());
-      task.setPriority(getPriority());
-      return true;
-    } else {
-      System.err.println("I don't know how to add a " + command);
-      return false;
-    }
+    String name = getInput("Name");
+    WorkStream substream = new WorkStream(currentStream, name);
+    currentStream.addStream(substream);
+    String description = getInput("Description");
+    substream.setDescription(description);
+  }
+
+  private void addTask() throws IOException {
+    WorkStream currentStream = (WorkStream) current;
+    String name = getInput("Name");
+    Task task = new Task(currentStream, name);
+    currentStream.addTask(task);
+    String description = getInput("Description");
+    task.setDescription(description);
+    task.setDueBy(getDueBy());
+    task.setPriority(getPriority());
   }
 
   private void child() throws IOException {
@@ -204,7 +200,8 @@ public class Repl {
 
   private void help() {
     if (current instanceof WorkStream) {
-      System.out.println("a: add a task or stream to this node");
+      System.out.println("as: add a stream to this node");
+      System.out.println("at: add a task to this node");
     }
     System.out.println("d: delete this node");
     System.out.println("e: edit this node");
@@ -224,7 +221,6 @@ public class Repl {
     System.out.println("Name: " + current.getName());
     System.out.println("Description: " + current.getDescription());
     System.out.println("Created At: " + current.getCreatedAt().toString());
-    System.out.println("Last Modified: " + current.getLastModified().toString());
     if (current instanceof WorkStream) {
       System.out.print("Substreams: ");
       for (WorkStream stream : current.getStreams()) System.out.print(stream.getName() + " ");

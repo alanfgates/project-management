@@ -3,24 +3,39 @@ package com.github.alanfgates.project.management;
 import java.io.Serializable;
 import java.net.URL;
 
-class Link implements Serializable {
+public class Link implements Serializable {
 
-  enum LinkType { EMAIL, GOOGLE_DOC, WEBPAGE }
+  public enum LinkType { EMAIL, GOOGLE_DOC, WEBPAGE }
 
-  private final LinkType type;
-  private final URL url;
+  private LinkType type;
+  private URL url;
+
+  /**
+   * For jackson
+   */
+  public Link() {
+
+  }
 
   Link(LinkType type, URL url) {
     this.type = type;
     this.url = url;
   }
 
-  LinkType getType() {
+  public LinkType getType() {
     return type;
   }
 
-  URL getUrl() {
+  public URL getUrl() {
     return url;
+  }
+
+  public void setType(LinkType type) {
+    this.type = type;
+  }
+
+  public void setUrl(URL url) {
+    this.url = url;
   }
 
   static LinkType parseLinkType(String linkType) throws IllegalArgumentException {
