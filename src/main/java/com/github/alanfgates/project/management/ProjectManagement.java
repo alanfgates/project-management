@@ -6,6 +6,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 
 class ProjectManagement {
 
@@ -33,6 +34,7 @@ class ProjectManagement {
       ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
       ObjectReader reader = mapper.readerFor(WorkStream.class);
       head = reader.readValue(db);
+      head.connectChildren();
     }
   }
 
@@ -41,6 +43,11 @@ class ProjectManagement {
   }
 
   void commit() throws IOException {
+    if (db.exists()) {
+      File backup = new File(db.getAbsolutePath() + ".bak");
+      if (backup.exists()) backup.delete();
+      Files.copy(db.toPath(), backup.toPath());
+    }
     ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
     mapper.writeValue(db, head);
   }

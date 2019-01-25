@@ -13,6 +13,10 @@ public abstract class TaskOrStream implements Serializable {
   protected String description;
   protected LocalDate createdAt;
 
+  // Levels of methods in this class and its children are chosen carefully to control what Jackson does and
+  // doesn't serialize.  parent serialized to avoid circular references.  createdAt (and dueBy in Task) are
+  // serialized as strings since LocalDate isn't easily serializable via Jackson.
+
   /**
    * For jackson
    */

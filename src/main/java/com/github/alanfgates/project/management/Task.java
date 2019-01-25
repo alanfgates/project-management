@@ -8,6 +8,8 @@ import java.util.List;
 
 public class Task extends TaskOrStream {
 
+  final static LocalDate END_OF_THE_WORLD = LocalDate.of(9999, 12, 31);
+
   private List<Link> links;
   private LocalDate dueBy;
   private Priority priority;
@@ -16,12 +18,16 @@ public class Task extends TaskOrStream {
    * For Jackson
    */
   public Task() {
+    priority = Priority.NONE;
+    dueBy = END_OF_THE_WORLD;
 
   }
 
   Task(WorkStream parent, String name) {
     super(parent, name);
     links = new ArrayList<>();
+    priority = Priority.NONE;
+    dueBy = END_OF_THE_WORLD;
   }
 
   public List<Link> getLinks() {
@@ -48,6 +54,7 @@ public class Task extends TaskOrStream {
    * For Jackson
    */
   public String getDueDate() {
+    if (dueBy == null) return END_OF_THE_WORLD.toString();
     return dueBy.toString();
   }
 
@@ -55,7 +62,7 @@ public class Task extends TaskOrStream {
    * For Jackson
    */
   public void setDueDate(String text) {
-    dueBy = LocalDate.parse(text);
+    dueBy = (text == null) ? null : LocalDate.parse(text);
   }
 
   static LocalDate parseDateString(String date) throws IllegalArgumentException {

@@ -231,9 +231,8 @@ public class Repl {
     } else if (current instanceof Task) {
       Task currentTask = (Task)current;
       LocalDate dueBy = currentTask.getDueBy();
-      if (dueBy != null) System.out.println("Due By: " + dueBy.toString());
-      Priority priority = currentTask.getPriority();
-      if (priority != null) System.out.println("Priority: " + priority.name().toLowerCase());
+      if (dueBy != null && !dueBy.equals(Task.END_OF_THE_WORLD)) System.out.println("Due By: " + dueBy.toString());
+      System.out.println("Priority: " + currentTask.getPriority().name().toLowerCase());
       List<Link> links = currentTask.getLinks();
       if (links.size() > 0) {
         System.out.print("Links: ");
@@ -255,7 +254,11 @@ public class Repl {
   private void allTasksByDueDate() {
     List<Task> tasks = new ArrayList<>(current.getAllTasks());
     tasks.sort(Comparator.comparing(Task::getDueBy));
-    for (Task task : tasks) System.out.println(task.getName() + " " + task.getDueBy());
+    for (Task task : tasks) {
+      System.out.print(task.getName() + " ");
+      if (!task.getDueBy().equals(Task.END_OF_THE_WORLD)) System.out.print(task.getDueBy().toString());
+      System.out.println();
+    }
   }
 
   private void allTasksByPriority() {

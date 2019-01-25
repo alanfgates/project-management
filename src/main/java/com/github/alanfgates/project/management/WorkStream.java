@@ -77,4 +77,14 @@ public class WorkStream extends TaskOrStream {
     return allTasks;
   }
 
+  /**
+   * After being read from Yaml the children aren't connected back to the parents.  Calling this will fix that.
+   */
+  void connectChildren() {
+    for (WorkStream stream : substreams) {
+      stream.setParent(this);
+      stream.connectChildren();
+    }
+    for (Task task : tasks) task.setParent(this);
+  }
 }
