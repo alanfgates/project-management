@@ -1,5 +1,8 @@
 package com.github.alanfgates.project.management;
 
+import com.googlecode.lanterna.graphics.TextGraphics;
+import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
+import com.googlecode.lanterna.terminal.Terminal;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -7,32 +10,67 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.List;
-import java.util.SortedSet;
-import java.util.TreeSet;
 
-public class Repl {
+public class TextUI {
 
   private final ProjectManagement proj;
-  private final WorkStream head;
-  private TaskOrStream current;
-  private BufferedReader input;
+  private final EntryDisplay head;
+  private Terminal terminal;
+  // private TaskOrStream current;
+  // private BufferedReader input;
 
-  private Repl(ProjectManagement proj) {
+  private TextUI(ProjectManagement proj) {
     this.proj = proj;
-    head = proj.getHead();
+    head = proj.getHead().getDisplay();
   }
 
-  private void repl() throws IOException {
+  private void run() throws IOException {
+    terminal = new DefaultTerminalFactory().createTerminal();
+
+    boolean done = false;
+    EntryDisplay current = head;
+    current.setSelected(true);
+    while (!done) {
+      terminal.clearScreen();
+      head.display(terminal, 0, 0);
+      terminal.flush();
+      com.googlecode.lanterna.input.KeyStroke key = terminal.readInput();
+      switch (key.getCharacter()) {
+        case 'q':
+          done = true;
+          break;
+
+        case 'h':
+          current.setOpened(false);
+          break;
+
+        case 'l':
+          current.setOpened(true);
+          break;
+
+      }
+    }
+    terminal.clearScreen();
+    TextGraphics goodbye = terminal.newTextGraphics();
+    goodbye.putString(0, 0, "Goodbye");
+    terminal.close();
+
+    System.out.println();
+
+    /*
+    Screen screen = new TerminalScreen(terminal);
+    TextGraphics tGraphics = screen.newTextGraphics();
+    screen.startScreen();
+    screen.clear();
+
+    tGraphics.putString(10, 10, s);
+    screen.refresh();
+
+    screen.readInput();
+    screen.stopScreen();
+    */
+    /*
     input = new BufferedReader(new InputStreamReader(System.in));
 
     System.out.println("Welcome to the project management system");
@@ -81,13 +119,17 @@ public class Repl {
         if (changed) proj.commit();
       }
     }
+    */
   }
 
+  /*
   private void tree(TaskOrStream node, int level) {
     for (int i = 0; i < level; i++) System.out.print("    ");
     System.out.println(node.getName());
     if (node instanceof WorkStream) {
-      for (TaskOrStream child : node.getAllChildren()) tree(child, level + 1);
+      List<TaskOrStream> children = new ArrayList<>(node.getAllChildren());
+      children.sort(Comparator.comparing(TaskOrStream::getName));
+      for (TaskOrStream child : children) tree(child, level + 1);
     }
 
   }
@@ -113,16 +155,17 @@ public class Repl {
   }
 
   private void child() throws IOException {
-    pickChildFromOptions(current.getAllChildren());
+    pickChildFromOptions(new ArrayList<>(current.getAllChildren()));
   }
 
-  private void pickChildFromOptions(Collection<TaskOrStream> options) throws IOException {
+  private void pickChildFromOptions(List<TaskOrStream> options) throws IOException {
     System.out.print("Enter name of child to select (");
+    options.sort(Comparator.comparing(TaskOrStream::getName));
     for (TaskOrStream child : options) System.out.print(child.getName() + " ");
     System.out.print(")? ");
     String name = input.readLine();
     System.out.println();
-    SortedSet<TaskOrStream> possibilities = new TreeSet<>(Comparator.comparing(TaskOrStream::getName));
+    List<TaskOrStream> possibilities = new ArrayList<>();
     for (TaskOrStream option : options) {
       if (option.getName().startsWith(name)) possibilities.add(option);
     }
@@ -132,7 +175,7 @@ public class Repl {
       System.out.println("Ambiguous, keep going");
       pickChildFromOptions(possibilities);
     } else {
-      current = possibilities.iterator().next();
+      current = possibilities.get(0);
     }
   }
 
@@ -329,6 +372,7 @@ public class Repl {
     }
     return getLink();
   }
+  */
 
   public static void main(String[] args) {
     Options options = new Options();
@@ -360,8 +404,8 @@ public class Repl {
         project = new ProjectManagement(projname);
       }
 
-      Repl repl = new Repl(project);
-      repl.repl();
+      TextUI gui = new TextUI(project);
+      gui.run();
 
     } catch (ParseException e) {
       System.err.println("Failed to parse the command line: " + e.getMessage());

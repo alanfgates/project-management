@@ -125,4 +125,9 @@ public class Task extends TaskOrStream {
   Collection<Task> getAllTasks() {
     return getTasks();
   }
+
+  @Override
+  EntryDisplay getDisplay() {
+    return new TaskDisplay(this);
+  }
 }

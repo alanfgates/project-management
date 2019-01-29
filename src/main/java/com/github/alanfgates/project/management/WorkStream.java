@@ -87,4 +87,9 @@ public class WorkStream extends TaskOrStream {
     }
     for (Task task : tasks) task.setParent(this);
   }
+
+  @Override
+  EntryDisplay getDisplay() {
+    return new StreamDisplay(this);
+  }
 }

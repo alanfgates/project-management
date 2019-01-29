@@ -49,6 +49,11 @@
       <artifactId>jackson-dataformat-yaml</artifactId>
       <version>${jackson.version}</version>
     </dependency>
+    <dependency>
+      <groupId>com.googlecode.lanterna</groupId>
+      <artifactId>lanterna</artifactId>
+      <version>3.0.1</version>
+    </dependency>
   </dependencies>
 
   <build>
@@ -100,7 +105,7 @@
         <configuration>
           <archive>
             <manifest>
-              <mainClass>com.github.alanfgates.project.management.Repl</mainClass>
+              <mainClass>com.github.alanfgates.project.management.TextUI</mainClass>
             </manifest>
           </archive>
           <descriptorRefs>

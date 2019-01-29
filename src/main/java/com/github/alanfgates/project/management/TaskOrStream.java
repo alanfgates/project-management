@@ -4,7 +4,12 @@ import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 public abstract class TaskOrStream implements Serializable {
 
@@ -72,8 +77,12 @@ public abstract class TaskOrStream implements Serializable {
     createdAt = LocalDate.parse(text);
   }
 
+  /**
+   * Get all the children of this node, sorted by name
+   * @return all children of hte node
+   */
   Collection<TaskOrStream> getAllChildren() {
-    List<TaskOrStream> all = new ArrayList<>();
+    SortedSet<TaskOrStream> all = new TreeSet<>(Comparator.comparing(TaskOrStream::getName));
     all.addAll(getStreams());
     all.addAll(getTasks());
     return all;
@@ -98,5 +107,7 @@ public abstract class TaskOrStream implements Serializable {
   abstract Collection<Task> getAllTasks();
 
   abstract void delete() throws StreamNotEmptyException;
+
+  abstract EntryDisplay getDisplay();
 
 }
