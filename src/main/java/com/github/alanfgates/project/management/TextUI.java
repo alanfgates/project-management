@@ -27,36 +27,65 @@ public class TextUI {
 
   private void run() throws IOException {
     terminal = new DefaultTerminalFactory().createTerminal();
+    try {
 
-    boolean done = false;
-    EntryDisplay current = head;
-    current.setSelected(true);
-    while (!done) {
-      terminal.clearScreen();
-      head.display(terminal, 0, 0);
-      terminal.flush();
-      com.googlecode.lanterna.input.KeyStroke key = terminal.readInput();
-      switch (key.getCharacter()) {
-        case 'q':
-          done = true;
-          break;
+      boolean done = false;
+      EntryDisplay current = head;
+      current.setSelected(true);
+      while (!done) {
+        terminal.clearScreen();
+        head.display(terminal, 0, 0);
+        terminal.flush();
+        com.googlecode.lanterna.input.KeyStroke key = terminal.readInput();
+        switch (key.getCharacter()) {
+          case 'q':
+            done = true;
+            break;
 
-        case 'h':
-          current.setOpened(false);
-          break;
+          case 'H':
+            current.setOpenAll(false);
+            break;
 
-        case 'l':
-          current.setOpened(true);
-          break;
+          case 'h':
+            current.setOpened(false);
+            break;
 
+          case 'j':
+            EntryDisplay tmp = current.next();
+            if (tmp != null) {
+              current.setSelected(false);
+              current = tmp;
+              current.setSelected(true);
+            }
+            break;
+
+          case 'k':
+            tmp = current.prev();
+            if (tmp != null) {
+              current.setSelected(false);
+              current = tmp;
+              current.setSelected(true);
+            }
+            break;
+
+          case 'L':
+            current.setOpenAll(true);
+            break;
+
+          case 'l':
+            current.setOpened(true);
+            break;
+
+        }
       }
-    }
-    terminal.clearScreen();
-    TextGraphics goodbye = terminal.newTextGraphics();
-    goodbye.putString(0, 0, "Goodbye");
-    terminal.close();
+    } finally {
+      terminal.clearScreen();
+      TextGraphics goodbye = terminal.newTextGraphics();
+      goodbye.putString(0, 0, "Goodbye");
+      terminal.close();
 
-    System.out.println();
+      System.out.println();
+    }
 
     /*
     Screen screen = new TerminalScreen(terminal);

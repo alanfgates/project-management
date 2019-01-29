@@ -33,6 +33,7 @@ public class Repl {
   }
 
   private void repl() throws IOException {
+    /*
     input = new BufferedReader(new InputStreamReader(System.in));
 
     System.out.println("Welcome to the project management system");
@@ -89,9 +90,11 @@ public class Repl {
     if (node instanceof WorkStream) {
       for (TaskOrStream child : node.getAllChildren()) tree(child, level + 1);
     }
+    */
 
   }
 
+  /*
   private void addStream() throws IOException {
     WorkStream currentStream = (WorkStream) current;
     String name = getInput("Name");
@@ -329,6 +332,7 @@ public class Repl {
     }
     return getLink();
   }
+  */
 
   public static void main(String[] args) {
     Options options = new Options();

@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 public class Task extends TaskOrStream {
 
@@ -13,6 +15,7 @@ public class Task extends TaskOrStream {
   private List<Link> links;
   private LocalDate dueBy;
   private Priority priority;
+  private TaskDisplay display;
 
   /**
    * For Jackson
@@ -112,22 +115,18 @@ public class Task extends TaskOrStream {
   }
 
   @Override
-  Collection<WorkStream> getStreams() {
-    return Collections.emptyList();
-  }
-
-  @Override
-  Collection<Task> getTasks() {
-    return Collections.singletonList(this);
-  }
-
-  @Override
-  Collection<Task> getAllTasks() {
-    return getTasks();
+  SortedSet<TaskOrStream> getAllChildren() {
+    return new TreeSet<>(Collections.singleton(this));
   }
 
   @Override
   EntryDisplay getDisplay() {
-    return new TaskDisplay(this);
+    if (display == null) display = new TaskDisplay(this);
+    return display;
+  }
+
+  @Override
+  void fixSiblings() {
+    // NOP
   }
 }

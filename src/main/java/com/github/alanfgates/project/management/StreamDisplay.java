@@ -6,6 +6,7 @@ import com.googlecode.lanterna.terminal.Terminal;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 class StreamDisplay extends EntryDisplay {
@@ -15,9 +16,6 @@ class StreamDisplay extends EntryDisplay {
   StreamDisplay(WorkStream stream) {
     super();
     this.stream = stream;
-    for (TaskOrStream entryChild : stream.getAllChildren()) {
-      children.add(entryChild.getDisplay());
-    }
   }
 
   @Override
@@ -27,12 +25,35 @@ class StreamDisplay extends EntryDisplay {
     TextGraphics line = term.newTextGraphics();
     if (opened) {
       line.putString(col, row, "-" + stream.getName(), mods);
-      for (EntryDisplay child : children) {
-        row = child.display(term, row + 1, col + 2);
+      for (TaskOrStream child : stream.getAllChildren()) {
+        row = child.getDisplay().display(term, row + 1, col + 2);
       }
     } else {
       line.putString(col, row, "+" + stream.getName(), mods);
     }
     return row;
+  }
+
+  @Override
+  void setOpenAll(boolean open) {
+    opened = open;
+    for (TaskOrStream child : stream.getAllChildren()) child.getDisplay().setOpenAll(open);
+  }
+
+  @Override
+  EntryDisplay next() {
+    if (opened) {
+      Iterator<TaskOrStream> iter = stream.getAllChildren().iterator();
+      if (iter.hasNext()) {
+        return iter.next().getDisplay();
+        // If not, fall through here
+      }
+    }
+    return stream.getNextSibling() == null ? null : stream.getNextSibling().getDisplay();
+  }
+
+  @Override
+  protected TaskOrStream getTaskOrStream() {
+    return stream;
   }
 }

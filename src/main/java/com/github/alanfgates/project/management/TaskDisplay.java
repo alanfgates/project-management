@@ -29,4 +29,19 @@ class TaskDisplay extends EntryDisplay {
     line.putString(col, row, task.getName(), mods);
     return row;
   }
+
+  @Override
+  void setOpenAll(boolean open) {
+    // NOP
+  }
+
+  @Override
+  EntryDisplay next() {
+    return task.getNextSibling() == null ? null : task.getNextSibling().getDisplay();
+  }
+
+  @Override
+  protected TaskOrStream getTaskOrStream() {
+    return task;
+  }
 }

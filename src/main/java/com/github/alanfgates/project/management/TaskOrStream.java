@@ -2,14 +2,8 @@ package com.github.alanfgates.project.management;
 
 import java.io.Serializable;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 import java.util.SortedSet;
-import java.util.TreeSet;
 
 public abstract class TaskOrStream implements Serializable {
 
@@ -17,6 +11,8 @@ public abstract class TaskOrStream implements Serializable {
   protected String name;
   protected String description;
   protected LocalDate createdAt;
+  protected TaskOrStream nextSibling; // points to the next TaskOrStream of my parent
+  protected TaskOrStream prevSibling; // points to the previous TaskOrStream of my parent
 
   // Levels of methods in this class and its children are chosen carefully to control what Jackson does and
   // doesn't serialize.  parent serialized to avoid circular references.  createdAt (and dueBy in Task) are
@@ -64,6 +60,18 @@ public abstract class TaskOrStream implements Serializable {
   }
 
   /**
+   * Next entry in the tree of the same level.
+   * @return next entry or null if there is no next entry.
+   */
+  TaskOrStream getNextSibling() {
+    return nextSibling;
+  }
+
+  TaskOrStream getPrevSibling() {
+    return prevSibling;
+  }
+
+  /**
    * For Jackson
    */
   public String getCreationTime() {
@@ -81,30 +89,16 @@ public abstract class TaskOrStream implements Serializable {
    * Get all the children of this node, sorted by name
    * @return all children of hte node
    */
-  Collection<TaskOrStream> getAllChildren() {
-    SortedSet<TaskOrStream> all = new TreeSet<>(Comparator.comparing(TaskOrStream::getName));
-    all.addAll(getStreams());
-    all.addAll(getTasks());
-    return all;
-  }
+  abstract SortedSet<TaskOrStream> getAllChildren();
 
   String buildName() {
     return (parent == null) ? name : parent.buildName() + "." + name;
   }
 
-  abstract Collection<WorkStream> getStreams();
-
   /**
-   * Get the tasks directly connected to this node.
-   * @return tasks
+   * Walk through the all children and set the next and prev pointers properly.
    */
-  abstract Collection<Task> getTasks();
-
-  /**
-   * Get all tasks under this node.
-   * @return all tasks
-   */
-  abstract Collection<Task> getAllTasks();
+  abstract void fixSiblings();
 
   abstract void delete() throws StreamNotEmptyException;
 
