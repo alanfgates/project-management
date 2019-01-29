@@ -70,6 +70,8 @@ public class Repl {
           allTasksByDueDate();
         } else if (current instanceof WorkStream && command.equals("tp")) {
           allTasksByPriority();
+        } else if (current instanceof WorkStream && command.equals("tt")) {
+          allTasksToday();
         } else {
           System.err.println("I don't understand the command " + command);
         }
@@ -111,11 +113,12 @@ public class Repl {
   }
 
   private void child() throws IOException {
-    pickChildFromOptions(current.getAllChildren());
+    pickChildFromOptions(new ArrayList<>(current.getAllChildren()));
   }
 
-  private void pickChildFromOptions(Collection<TaskOrStream> options) throws IOException {
+  private void pickChildFromOptions(List<TaskOrStream> options) throws IOException {
     System.out.print("Enter name of child to select (");
+    options.sort(Comparator.comparing(TaskOrStream::getName));
     for (TaskOrStream child : options) System.out.print(child.getName() + " ");
     System.out.print(")? ");
     String name = input.readLine();
@@ -214,6 +217,7 @@ public class Repl {
       System.out.println("s: select a child node");
       System.out.println("td: show all tasks under this node sorted by due date");
       System.out.println("tp: show all tasks under this node sorted by priority");
+      System.out.println("tt: show all tasks under this node due today");
     }
   }
 
@@ -255,7 +259,7 @@ public class Repl {
     List<Task> tasks = new ArrayList<>(current.getAllTasks());
     tasks.sort(Comparator.comparing(Task::getDueBy));
     for (Task task : tasks) {
-      System.out.print(task.getName() + " ");
+      System.out.print(task.buildName() + " ");
       if (!task.getDueBy().equals(Task.END_OF_THE_WORLD)) System.out.print(task.getDueBy().toString());
       System.out.println();
     }
@@ -265,10 +269,21 @@ public class Repl {
     List<Task> tasks = new ArrayList<>(current.getAllTasks());
     tasks.sort(Comparator.comparing(Task::getPriority));
     for (Task task : tasks) {
-      System.out.print(task.getName() + " ");
+      System.out.print(task.buildName() + " ");
       Priority p = task.getPriority();
       if (p != null) System.out.print(p.name().toLowerCase());
       System.out.println();
+    }
+  }
+
+  private void allTasksToday() {
+    for (Task task : current.getAllTasks()) {
+      if (task.getDueBy() != null && LocalDate.now().compareTo(task.getDueBy()) >= 0) {
+        Priority p = task.getPriority();
+        System.out.print(task.buildName() + " " + task.getDueBy().toString());
+        if (p != null) System.out.print(" " + p.name().toLowerCase());
+        System.out.println();
+      }
     }
   }
 

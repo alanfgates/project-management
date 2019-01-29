@@ -79,6 +79,10 @@ public abstract class TaskOrStream implements Serializable {
     return all;
   }
 
+  String buildName() {
+    return (parent == null) ? name : parent.buildName() + "." + name;
+  }
+
   abstract Collection<WorkStream> getStreams();
 
   /**
