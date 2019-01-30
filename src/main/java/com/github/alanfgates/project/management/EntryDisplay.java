@@ -21,12 +21,15 @@ abstract class EntryDisplay {
 
   final EntryDisplay prev() {
     TaskOrStream entry = getTaskOrStream();
-    if (entry.getPrevSibling() == null) {
-      return null;
-    } else if (entry.getPrevSibling().getDisplay().opened) {
-      return entry.getPrevSibling().getAllChildren().last().getDisplay();
+    if (entry.getPrev() == null) {
+      // This means we don't have an older sibling, so go to our parent
+      TaskOrStream parent = entry.getParent();
+      if (parent == null) return null;
+      else return parent.getDisplay();
+    } else if (entry.getPrev().getDisplay().opened) {
+      return entry.getPrev().getChildren().last().getDisplay();
     } else {
-      return entry.getPrevSibling().getDisplay();
+      return entry.getPrev().getDisplay();
     }
   }
 

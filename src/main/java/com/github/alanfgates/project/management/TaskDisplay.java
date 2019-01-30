@@ -37,7 +37,14 @@ class TaskDisplay extends EntryDisplay {
 
   @Override
   EntryDisplay next() {
-    return task.getNextSibling() == null ? null : task.getNextSibling().getDisplay();
+    TaskOrStream next = task.getNext();
+    if (next != null) {
+      return next.getDisplay();
+    } else {
+      next = task.getParent().getNext();
+      if (next != null) return next.getDisplay();
+      else return null;
+    }
   }
 
   @Override

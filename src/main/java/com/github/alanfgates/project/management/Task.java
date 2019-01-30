@@ -2,15 +2,13 @@ package com.github.alanfgates.project.management;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
-import java.util.SortedSet;
-import java.util.TreeSet;
 
 public class Task extends TaskOrStream {
 
-  final static LocalDate END_OF_THE_WORLD = LocalDate.of(9999, 12, 31);
+  private final static LocalDate END_OF_THE_WORLD = LocalDate.of(9999, 12, 31);
+  private final static SortedLinkedTree<TaskOrStream> EMPTY_TREE = new SortedLinkedTree<>(Comparator.comparing(TaskOrStream::getName));
 
   private List<Link> links;
   private LocalDate dueBy;
@@ -115,8 +113,8 @@ public class Task extends TaskOrStream {
   }
 
   @Override
-  SortedSet<TaskOrStream> getAllChildren() {
-    return new TreeSet<>(Collections.singleton(this));
+  SortedLinkedTree<TaskOrStream> getChildren() {
+    return EMPTY_TREE;
   }
 
   @Override
@@ -126,7 +124,8 @@ public class Task extends TaskOrStream {
   }
 
   @Override
-  void fixSiblings() {
+  void connectChildren() {
     // NOP
+
   }
 }

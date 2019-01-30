@@ -25,7 +25,7 @@ class StreamDisplay extends EntryDisplay {
     TextGraphics line = term.newTextGraphics();
     if (opened) {
       line.putString(col, row, "-" + stream.getName(), mods);
-      for (TaskOrStream child : stream.getAllChildren()) {
+      for (TaskOrStream child : stream.getChildren()) {
         row = child.getDisplay().display(term, row + 1, col + 2);
       }
     } else {
@@ -37,19 +37,19 @@ class StreamDisplay extends EntryDisplay {
   @Override
   void setOpenAll(boolean open) {
     opened = open;
-    for (TaskOrStream child : stream.getAllChildren()) child.getDisplay().setOpenAll(open);
+    for (TaskOrStream child : stream.getChildren()) child.getDisplay().setOpenAll(open);
   }
 
   @Override
   EntryDisplay next() {
     if (opened) {
-      Iterator<TaskOrStream> iter = stream.getAllChildren().iterator();
+      Iterator<TaskOrStream> iter = stream.getChildren().iterator();
       if (iter.hasNext()) {
         return iter.next().getDisplay();
         // If not, fall through here
       }
     }
-    return stream.getNextSibling() == null ? null : stream.getNextSibling().getDisplay();
+    return stream.getNext() == null ? null : stream.getNext().getDisplay();
   }
 
   @Override

@@ -1,27 +1,19 @@
 package com.github.alanfgates.project.management;
 
-import java.io.Serializable;
 import java.time.LocalDate;
-import java.util.Collection;
-import java.util.SortedSet;
 
-public abstract class TaskOrStream implements Serializable {
+public abstract class TaskOrStream implements Comparable<TaskOrStream> {
 
   protected WorkStream parent;
   protected String name;
   protected String description;
   protected LocalDate createdAt;
-  protected TaskOrStream nextSibling; // points to the next TaskOrStream of my parent
-  protected TaskOrStream prevSibling; // points to the previous TaskOrStream of my parent
 
   // Levels of methods in this class and its children are chosen carefully to control what Jackson does and
   // doesn't serialize.  parent serialized to avoid circular references.  createdAt (and dueBy in Task) are
   // serialized as strings since LocalDate isn't easily serializable via Jackson.
 
-  /**
-   * For jackson
-   */
-  public  TaskOrStream() {
+  protected TaskOrStream() {
 
   }
 
@@ -63,12 +55,14 @@ public abstract class TaskOrStream implements Serializable {
    * Next entry in the tree of the same level.
    * @return next entry or null if there is no next entry.
    */
-  TaskOrStream getNextSibling() {
-    return nextSibling;
+  TaskOrStream getNext() {
+    if (parent == null) return null;
+    return parent.getChildren().next(this);
   }
 
-  TaskOrStream getPrevSibling() {
-    return prevSibling;
+  TaskOrStream getPrev() {
+    if (parent == null) return null;
+    return parent.getChildren().prev(this);
   }
 
   /**
@@ -89,19 +83,20 @@ public abstract class TaskOrStream implements Serializable {
    * Get all the children of this node, sorted by name
    * @return all children of hte node
    */
-  abstract SortedSet<TaskOrStream> getAllChildren();
-
-  String buildName() {
-    return (parent == null) ? name : parent.buildName() + "." + name;
-  }
-
-  /**
-   * Walk through the all children and set the next and prev pointers properly.
-   */
-  abstract void fixSiblings();
+  abstract SortedLinkedTree<TaskOrStream> getChildren();
 
   abstract void delete() throws StreamNotEmptyException;
 
   abstract EntryDisplay getDisplay();
 
+  /**
+   * After the tree has been read back from YAML we need to wire up all the parent/child relationships
+   */
+  abstract void connectChildren();
+
+  @Override
+  public int compareTo(TaskOrStream o) {
+    if (o == null) return 1;
+    else return getName().compareTo(o.getName());
+  }
 }
