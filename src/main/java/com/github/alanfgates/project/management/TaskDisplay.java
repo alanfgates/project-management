@@ -51,4 +51,27 @@ class TaskDisplay extends EntryDisplay {
   protected TaskOrStream getTaskOrStream() {
     return task;
   }
+
+  @Override
+  boolean markDone() {
+    task.markDone();
+    return true;
+  }
+
+  @Override
+  boolean delete(TextUI ui) {
+    task.delete();
+    return true;
+  }
+
+  @Override
+  void details(TextUI ui) throws IOException {
+    List<String> lines = commonDetails();
+    if (task.getDueBy() != null) lines.add("Due by: " + task.getDueBy().toString());
+    if (task.getPriority() != null) lines.add("Priority: " + task.getPriority().name().toLowerCase());
+    for (Link link : task.getLinks()) {
+      lines.add("Link: " + link.getType().name().toLowerCase().replace('_', ' ') + " " + link.getUrl().toString());
+    }
+    ui.displayStrings(lines);
+  }
 }

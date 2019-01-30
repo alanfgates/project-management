@@ -3,6 +3,8 @@ package com.github.alanfgates.project.management;
 import com.googlecode.lanterna.terminal.Terminal;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 abstract class EntryDisplay {
   protected boolean selected;
@@ -16,6 +18,21 @@ abstract class EntryDisplay {
   abstract void setOpenAll(boolean open);
 
   abstract EntryDisplay next();
+
+  abstract boolean markDone();
+
+  abstract boolean delete(TextUI ui) throws IOException;
+
+  abstract void details(TextUI ui) throws IOException;
+
+  final protected List<String> commonDetails() {
+    List<String> lines = new ArrayList<>();
+    lines.add("Name: " + getTaskOrStream().getName());
+    lines.add("Description: " + getTaskOrStream().getDescription());
+    lines.add("Created at: " + getTaskOrStream().getCreationTime());
+    return lines;
+  }
+
 
   protected abstract TaskOrStream getTaskOrStream();
 

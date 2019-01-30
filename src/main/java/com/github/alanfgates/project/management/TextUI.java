@@ -1,5 +1,7 @@
 package com.github.alanfgates.project.management;
 
+import com.googlecode.lanterna.TerminalPosition;
+import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.graphics.TextGraphics;
 import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
 import com.googlecode.lanterna.terminal.Terminal;
@@ -11,14 +13,15 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class TextUI {
 
   private final ProjectManagement proj;
   private final EntryDisplay head;
   private Terminal terminal;
-  // private TaskOrStream current;
-  // private BufferedReader input;
 
   private TextUI(ProjectManagement proj) {
     this.proj = proj;
@@ -35,12 +38,20 @@ public class TextUI {
       while (!done) {
         terminal.clearScreen();
         head.display(terminal, 0, 0);
+        terminal.setCursorVisible(false);
         terminal.flush();
         com.googlecode.lanterna.input.KeyStroke key = terminal.readInput();
         switch (key.getCharacter()) {
-          case 'q':
-            done = true;
+          case 'd':
+            if (current == head) {
+              showError("You cannot delete the head node!");
+              break;
+            }
+            // TODO need pop up that asks if you're sure
+            if (current.delete(this)) current = prevOrNext(current);
             break;
+
+          // TODO - e for edit
 
           case 'H':
             current.setOpenAll(false);
@@ -76,9 +87,27 @@ public class TextUI {
             current.setOpened(true);
             break;
 
+          case 'm':
+            if (current.markDone()) current = prevOrNext(current);
+            break;
+
+          case 'q':
+            done = true;
+            break;
+
+          // TODO s - add stream
+
+          // TODO t - add task
+
+          // TODO ? - help
+
+          case '\n':
+            current.details(this);
+            break;
         }
       }
     } finally {
+      terminal.setCursorVisible(true);
       terminal.clearScreen();
       TextGraphics goodbye = terminal.newTextGraphics();
       goodbye.putString(0, 0, "Goodbye");
@@ -86,83 +115,90 @@ public class TextUI {
 
       System.out.println();
     }
+  }
 
-    /*
-    Screen screen = new TerminalScreen(terminal);
-    TextGraphics tGraphics = screen.newTextGraphics();
-    screen.startScreen();
-    screen.clear();
-
-    tGraphics.putString(10, 10, s);
-    screen.refresh();
-
-    screen.readInput();
-    screen.stopScreen();
-    */
-    /*
-    input = new BufferedReader(new InputStreamReader(System.in));
-
-    System.out.println("Welcome to the project management system");
-    current = head;
-    while (true) {
-      boolean changed = false;
-      try {
-        tree(current, 0);
-        String command = input.readLine().toLowerCase();
-        if (command.length() == 0) {
-          continue;
-        } else if (current instanceof WorkStream && command.equals("as")) {
-          addStream();
-          changed = true;
-        } else if (current instanceof WorkStream && command.equals("at")) {
-          addTask();
-          changed = true;
-        } else if (command.equals("d")) {
-          changed = delete();
-        } else if (command.equals("e")) {
-          changed = edit();
-        } else if (command.equals("h") || command.equals("?")) {
-          help();
-        } else if (command.equals("l")) {
-          list();
-        } else if (current instanceof Task && command.equals("m")) {
-          markDone();
-          changed = true;
-        } else if (command.equals("p")) {
-          parent();
-        } else if (command.equals("q")) {
-          System.out.println("Goodbye");
-          return;
-        } else if (current instanceof WorkStream && command.equals("s")) {
-          child();
-        } else if (current instanceof WorkStream && command.equals("td")) {
-          allTasksByDueDate();
-        } else if (current instanceof WorkStream && command.equals("tp")) {
-          allTasksByPriority();
-        } else if (current instanceof WorkStream && command.equals("tt")) {
-          allTasksToday();
-        } else {
-          System.err.println("I don't understand the command " + command);
-        }
-      } finally {
-        if (changed) proj.commit();
-      }
+  private EntryDisplay prevOrNext(EntryDisplay current) {
+    EntryDisplay tmp = current.prev();
+    if (tmp != null) {
+      current.setSelected(false);
+      current = tmp;
+      current.setSelected(true);
+      return current;
     }
-    */
+    tmp = current.next();
+    if (tmp != null) {
+      current.setSelected(false);
+      current = tmp;
+      current.setSelected(true);
+      return current;
+    }
+    throw new RuntimeException("I've deleted the last node, that's really bad!");
+  }
+
+  void showError(String errorMsg) throws IOException {
+    displayStrings(Collections.singletonList(errorMsg));
+  }
+
+  void displayStrings(List<String> lines) throws IOException {
+    lines = fitStrings(lines, terminal.getTerminalSize().getColumns() - 10);
+    int maxLineLen = 0;
+    for (String line : lines) if (line.length() > maxLineLen) maxLineLen = line.length();
+    TerminalPosition errorWindow = centerWindow(lines.size() + 2, maxLineLen);
+    TextGraphics display = terminal.newTextGraphics();
+    int nextRow = 2;
+    for (String line : lines) {
+      display.putString(errorWindow.withRelative(new TerminalPosition(2, nextRow++)),
+          line);
+
+    }
+    // I don't care what the character is
+    terminal.readInput();
+  }
+
+  private TerminalPosition centerWindow(int rows, int cols) throws IOException {
+    // Give some borders
+    rows += 2;
+    cols += 4;
+    TerminalSize termSize = terminal.getTerminalSize();
+    // TODO handle this better
+    if (rows > termSize.getRows()) throw new RuntimeException("window too small");
+    if (cols > termSize.getColumns()) throw new RuntimeException("window too small");
+
+    int colMidPt = termSize.getColumns() / 2;
+    int rowMidPt = termSize.getRows() / 2;
+
+    int colStartPt = colMidPt - (cols / 2);
+    int rowStartPt = rowMidPt - (rows / 2);
+
+    TextGraphics box = terminal.newTextGraphics();
+    TerminalPosition boxPos = new TerminalPosition(colStartPt, rowStartPt);
+    box.drawRectangle(boxPos, new TerminalSize(cols, rows), '*');
+    box.fillRectangle(new TerminalPosition(colStartPt + 1, rowStartPt + 1),
+        new TerminalSize(cols - 2, rows - 2), ' ');
+    return boxPos;
+  }
+
+  private List<String> fitStrings(List<String> input, int maxLen) {
+    List<String> output = new ArrayList<>();
+    for (String s : input) {
+      String oneLine = s.replace('\n', ' ').replace('\t', ' ');
+      while (oneLine.length() > maxLen) {
+        int breakPoint = maxLen;
+        for (int i = maxLen; i > 0; i--) {
+          if (oneLine.charAt(i) == ' ') {
+            breakPoint = i;
+            break;
+          }
+        }
+        output.add(oneLine.substring(0, breakPoint));
+        oneLine = oneLine.substring(breakPoint);
+      }
+      output.add(oneLine);
+    }
+    return output;
   }
 
   /*
-  private void tree(TaskOrStream node, int level) {
-    for (int i = 0; i < level; i++) System.out.print("    ");
-    System.out.println(node.getName());
-    if (node instanceof WorkStream) {
-      List<TaskOrStream> children = new ArrayList<>(node.getAllChildren());
-      children.sort(Comparator.comparing(TaskOrStream::getName));
-      for (TaskOrStream child : children) tree(child, level + 1);
-    }
-
-  }
-
   private void addStream() throws IOException {
     WorkStream currentStream = (WorkStream) current;
     String name = getInput("Name");
@@ -181,49 +217,6 @@ public class TextUI {
     task.setDescription(description);
     task.setDueBy(getDueBy());
     task.setPriority(getPriority());
-  }
-
-  private void child() throws IOException {
-    pickChildFromOptions(new ArrayList<>(current.getAllChildren()));
-  }
-
-  private void pickChildFromOptions(List<TaskOrStream> options) throws IOException {
-    System.out.print("Enter name of child to select (");
-    options.sort(Comparator.comparing(TaskOrStream::getName));
-    for (TaskOrStream child : options) System.out.print(child.getName() + " ");
-    System.out.print(")? ");
-    String name = input.readLine();
-    System.out.println();
-    List<TaskOrStream> possibilities = new ArrayList<>();
-    for (TaskOrStream option : options) {
-      if (option.getName().startsWith(name)) possibilities.add(option);
-    }
-    if (possibilities.size() == 0) {
-      System.err.println(name + " does not refer to any child of this node");
-    } else if (possibilities.size() > 1) {
-      System.out.println("Ambiguous, keep going");
-      pickChildFromOptions(possibilities);
-    } else {
-      current = possibilities.get(0);
-    }
-  }
-
-  private boolean delete() throws IOException {
-    if (current == head) {
-      System.err.println("You can't delete the head node!");
-      return false;
-    }
-    String reponse = getInput("Delete " + current.getName() + ", are you sure? ");
-    if (reponse.toLowerCase().startsWith("y")) {
-      try {
-        current.delete();
-        parent();
-        return true;
-      } catch (StreamNotEmptyException e) {
-        System.err.println("Node " + current.getName() + " is not empty and cannot be deleted");
-      }
-    }
-    return false;
   }
 
   private boolean edit() throws IOException {
@@ -317,90 +310,6 @@ public class TextUI {
     }
   }
 
-  private void markDone() {
-    ((Task)current).markDone();
-    parent();
-  }
-
-  private void parent() {
-    if (current.getParent() != null) current = current.getParent();
-  }
-
-  private void allTasksByDueDate() {
-    List<Task> tasks = new ArrayList<>(current.getAllTasks());
-    tasks.sort(Comparator.comparing(Task::getDueBy));
-    for (Task task : tasks) {
-      System.out.print(task.buildName() + " ");
-      if (!task.getDueBy().equals(Task.END_OF_THE_WORLD)) System.out.print(task.getDueBy().toString());
-      System.out.println();
-    }
-  }
-
-  private void allTasksByPriority() {
-    List<Task> tasks = new ArrayList<>(current.getAllTasks());
-    tasks.sort(Comparator.comparing(Task::getPriority));
-    for (Task task : tasks) {
-      System.out.print(task.buildName() + " ");
-      Priority p = task.getPriority();
-      if (p != null) System.out.print(p.name().toLowerCase());
-      System.out.println();
-    }
-  }
-
-  private void allTasksToday() {
-    for (Task task : current.getAllTasks()) {
-      if (task.getDueBy() != null && LocalDate.now().compareTo(task.getDueBy()) >= 0) {
-        Priority p = task.getPriority();
-        System.out.print(task.buildName() + " " + task.getDueBy().toString());
-        if (p != null) System.out.print(" " + p.name().toLowerCase());
-        System.out.println();
-      }
-    }
-  }
-
-  private String getInput(String prompt) throws IOException {
-    System.out.print(prompt + "? ");
-    return input.readLine();
-  }
-
-  private LocalDate getDueBy() throws IOException {
-    String date = getInput("Due By").toLowerCase();
-    try {
-      return Task.parseDateString(date);
-    } catch (IllegalArgumentException e) {
-      System.err.println(e.getMessage());
-      return getDueBy();
-    }
-  }
-
-  private Priority getPriority() throws IOException {
-    String priority = getInput("Priority");
-    try {
-      return Task.parsePriorityString(priority);
-    } catch (IllegalArgumentException e) {
-      System.err.println("Don't know priority " + priority + ", valid values are 'high', 'low', 'medium'");
-      return getPriority();
-    }
-  }
-
-  private Link getLink() throws IOException {
-    String linkTypeStr = getInput("Link Type");
-    if (linkTypeStr.length() == 0) return null;
-    try {
-      Link.LinkType linkType = Link.parseLinkType(linkTypeStr);
-      String urlString = getInput("URL");
-      URL url = new URL(urlString);
-      return new Link(linkType, url);
-
-    } catch (IllegalArgumentException e) {
-      System.err.print("Unknown Link Type " + linkTypeStr + ", valid values are: ");
-      for (Link.LinkType type : Link.LinkType.values()) System.err.print(type.name().toLowerCase() + " ");
-      System.err.println();
-    } catch (MalformedURLException e) {
-      System.err.println("Bad URL: " + e.getMessage());
-    }
-    return getLink();
-  }
   */
 
   public static void main(String[] args) {

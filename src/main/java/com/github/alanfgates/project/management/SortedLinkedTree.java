@@ -52,7 +52,7 @@ public class SortedLinkedTree<E> implements Iterable<E> {
   public boolean remove(E e) {
     Integer pos = positions.remove(e);
     if (pos != null) {
-      list.remove(pos);
+      list.remove(pos.intValue());
       rebuildPositions(pos);
       return true;
     } else {
@@ -60,12 +60,11 @@ public class SortedLinkedTree<E> implements Iterable<E> {
     }
   }
 
-  public boolean addAll(Collection<? extends E> c) {
-    // it's faster to throw them all in and resort then to insert them sorted one at a time
+  public void addAll(Collection<? extends E> c) {
+    // it's faster to throw them all in and re-sort then to insert them sorted one at a time
     list.addAll(c);
     list.sort(comparator);
     rebuildPositions(0);
-    return true;
   }
 
   public void clear() {

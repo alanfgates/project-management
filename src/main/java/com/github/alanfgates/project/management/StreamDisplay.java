@@ -56,4 +56,27 @@ class StreamDisplay extends EntryDisplay {
   protected TaskOrStream getTaskOrStream() {
     return stream;
   }
+
+  @Override
+  boolean markDone() {
+    return false;
+  }
+
+  @Override
+  boolean delete(TextUI ui) throws IOException {
+    try {
+      stream.delete();
+      return true;
+    } catch (StreamNotEmptyException e) {
+      ui.showError("Failed to delete non-empty stream");
+      e.printStackTrace();
+      return false;
+    }
+  }
+
+  @Override
+  void details(TextUI ui) throws IOException {
+    List<String> lines = commonDetails();
+    ui.displayStrings(lines);
+  }
 }
