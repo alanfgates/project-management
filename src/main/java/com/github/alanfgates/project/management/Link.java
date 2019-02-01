@@ -3,6 +3,7 @@ package com.github.alanfgates.project.management;
 import java.io.Serializable;
 import java.net.URL;
 
+@Deprecated
 public class Link implements Serializable {
 
   public enum LinkType { EMAIL, GOOGLE_DOC, WEBPAGE }

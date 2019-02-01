@@ -1,19 +1,19 @@
 package com.github.alanfgates.project.management;
 
+import java.net.URL;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
 public class Task extends TaskOrStream {
 
-  private final static LocalDate END_OF_THE_WORLD = LocalDate.of(9999, 12, 31);
+  final static LocalDate END_OF_THE_WORLD = LocalDate.of(9999, 12, 31);
   private final static SortedLinkedTree<TaskOrStream> EMPTY_TREE = new SortedLinkedTree<>(Comparator.comparing(TaskOrStream::getName));
 
-  private List<Link> links;
   private LocalDate dueBy;
   private Priority priority;
   private TaskDisplay display;
+  private URL link;
 
   /**
    * For Jackson
@@ -26,21 +26,22 @@ public class Task extends TaskOrStream {
 
   Task(WorkStream parent, String name) {
     super(parent, name);
-    links = new ArrayList<>();
     priority = Priority.NONE;
     dueBy = END_OF_THE_WORLD;
   }
 
-  public List<Link> getLinks() {
-    return links;
-  }
-
-  void addLink(Link link) {
-    links.add(link);
-  }
-
+  // For backwards compatibility when JSON reads older stored data
+  @Deprecated
   public void setLinks(List<Link> links) {
-    this.links = links;
+    if (links.size() > 1) link = links.get(0).getUrl();
+  }
+
+  public URL getLink() {
+    return link;
+  }
+
+  public void setLink(URL link) {
+    this.link = link;
   }
 
   LocalDate getDueBy() {
@@ -66,7 +67,7 @@ public class Task extends TaskOrStream {
     dueBy = (text == null) ? null : LocalDate.parse(text);
   }
 
-  static LocalDate parseDateString(String date) throws IllegalArgumentException {
+  static LocalDate parseDateString(String date) throws InvalidInputException {
     // If we are passed a zero length or null date just ignore it
     if (date != null && date.length() > 0) {
       if (date.startsWith("tod")) {
@@ -83,7 +84,7 @@ public class Task extends TaskOrStream {
           if (month < now.getMonthValue()) year++;
           return LocalDate.of(year, month, day);
         } catch (NumberFormatException e) {
-          throw new IllegalArgumentException("Cannot parse " + date + ", please use 'today', 'tomorrow', or mm/dd");
+          throw new InvalidInputException("Cannot parse " + date + ", please use 'today', 'tomorrow', or mm/dd");
         }
       }
     }

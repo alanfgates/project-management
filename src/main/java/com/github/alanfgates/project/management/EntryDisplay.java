@@ -19,11 +19,17 @@ abstract class EntryDisplay {
 
   abstract EntryDisplay next();
 
-  abstract boolean markDone();
+  abstract boolean markDone(TextUI ui) throws IOException;
 
   abstract boolean delete(TextUI ui) throws IOException;
 
   abstract void details(TextUI ui) throws IOException;
+
+  abstract void help(TextUI ui) throws IOException;
+
+  abstract void addStream(TextUI ui) throws IOException;
+
+  abstract void addTask(TextUI ui) throws IOException;
 
   final protected List<String> commonDetails() {
     List<String> lines = new ArrayList<>();

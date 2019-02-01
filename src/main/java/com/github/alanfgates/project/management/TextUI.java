@@ -15,7 +15,9 @@ import org.apache.commons.cli.ParseException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class TextUI {
 
@@ -48,7 +50,10 @@ public class TextUI {
               break;
             }
             // TODO need pop up that asks if you're sure
-            if (current.delete(this)) current = prevOrNext(current);
+            if (current.delete(this)) {
+              current = prevOrNext(current);
+              proj.commit();
+            }
             break;
 
           // TODO - e for edit
@@ -88,21 +93,32 @@ public class TextUI {
             break;
 
           case 'm':
-            if (current.markDone()) current = prevOrNext(current);
+            if (current.markDone(this)) {
+              current = prevOrNext(current);
+              proj.commit();
+            }
             break;
 
           case 'q':
             done = true;
             break;
 
-          // TODO s - add stream
+          case 's':
+            current.addStream(this);
+            proj.commit();
+            break;
 
-          // TODO t - add task
-
-          // TODO ? - help
+          case 't':
+            current.addTask(this);
+            proj.commit();
+            break;
 
           case '\n':
             current.details(this);
+            break;
+
+          default:
+            current.help(this);
             break;
         }
       }
@@ -153,6 +169,46 @@ public class TextUI {
     }
     // I don't care what the character is
     terminal.readInput();
+  }
+
+  /**
+   * Given a set of prompts, return a set of answers
+   * @param title Title of this input
+   * @param inputs list of inputs to collect
+   * @return map of prompts to answers
+   */
+  void getInput(String title, List<InputCollector> inputs) throws IOException {
+    terminal.clearScreen();
+    int currentRow = 1;
+    TextGraphics display = terminal.newTextGraphics();
+    display.putString(1, currentRow++, title);
+    terminal.setCursorVisible(true);
+    int maxLineLen = terminal.getTerminalSize().getColumns();
+    try {
+      for (InputCollector input : inputs) {
+        while (true) {
+          display.putString(1, currentRow++, input.getPrompt() + ": ");
+          Character c = 'a';
+          StringBuilder answer = new StringBuilder();
+          while (c != '\t' && c != '\n') {
+            c = terminal.readInput().getCharacter();
+            if (c != '\t' && c != '\n') {
+              answer.append(c);
+              terminal.putCharacter(c);
+            }
+          }
+          currentRow += (answer.length() + input.getPrompt().length() + 4) / maxLineLen;
+          try {
+            input.collect(answer.toString());
+            break;
+          } catch (InvalidInputException e) {
+            display.putString(1, currentRow++, e.getMessage());
+          }
+        }
+      }
+    } finally {
+      terminal.setCursorVisible(false);
+    }
   }
 
   private TerminalPosition centerWindow(int rows, int cols) throws IOException {
@@ -263,51 +319,6 @@ public class TextUI {
 
     System.err.println("Sorry, I didn't under the command " + field);
     return false;
-  }
-
-  private void help() {
-    if (current instanceof WorkStream) {
-      System.out.println("as: add a stream to this node");
-      System.out.println("at: add a task to this node");
-    }
-    System.out.println("d: delete this node");
-    System.out.println("e: edit this node");
-    System.out.println("h or ?: print this");
-    System.out.println("l: list (describe) this node");
-    if (current instanceof Task) System.out.println("m: mark done");
-    System.out.println("p: move to parent node");
-    System.out.println("q: quit");
-    if (current instanceof WorkStream) {
-      System.out.println("s: select a child node");
-      System.out.println("td: show all tasks under this node sorted by due date");
-      System.out.println("tp: show all tasks under this node sorted by priority");
-      System.out.println("tt: show all tasks under this node due today");
-    }
-  }
-
-  private void list() {
-    System.out.println("Name: " + current.getName());
-    System.out.println("Description: " + current.getDescription());
-    System.out.println("Created At: " + current.getCreatedAt().toString());
-    if (current instanceof WorkStream) {
-      System.out.print("Substreams: ");
-      for (WorkStream stream : current.getStreams()) System.out.print(stream.getName() + " ");
-      System.out.println();
-      System.out.print("Tasks: ");
-      for (Task task : current.getTasks()) System.out.print(task.getName() + " ");
-      System.out.println();
-    } else if (current instanceof Task) {
-      Task currentTask = (Task)current;
-      LocalDate dueBy = currentTask.getDueBy();
-      if (dueBy != null && !dueBy.equals(Task.END_OF_THE_WORLD)) System.out.println("Due By: " + dueBy.toString());
-      System.out.println("Priority: " + currentTask.getPriority().name().toLowerCase());
-      List<Link> links = currentTask.getLinks();
-      if (links.size() > 0) {
-        System.out.print("Links: ");
-        for (Link link : currentTask.getLinks()) System.out.print(link + " ");
-      }
-      System.out.println();
-    }
   }
 
   */

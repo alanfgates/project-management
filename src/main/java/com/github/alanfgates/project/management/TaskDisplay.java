@@ -7,6 +7,7 @@ import com.googlecode.lanterna.terminal.Terminal;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 class TaskDisplay extends EntryDisplay {
@@ -53,7 +54,7 @@ class TaskDisplay extends EntryDisplay {
   }
 
   @Override
-  boolean markDone() {
+  boolean markDone(TextUI ui) {
     task.markDone();
     return true;
   }
@@ -69,9 +70,31 @@ class TaskDisplay extends EntryDisplay {
     List<String> lines = commonDetails();
     if (task.getDueBy() != null) lines.add("Due by: " + task.getDueBy().toString());
     if (task.getPriority() != null) lines.add("Priority: " + task.getPriority().name().toLowerCase());
-    for (Link link : task.getLinks()) {
-      lines.add("Link: " + link.getType().name().toLowerCase().replace('_', ' ') + " " + link.getUrl().toString());
-    }
+    if (task.getLink() != null) lines.add("Link: " + task.getLink());
     ui.displayStrings(lines);
+  }
+
+  @Override
+  void help(TextUI ui) throws IOException {
+    ui.displayStrings(Arrays.asList(
+        "d: delete",
+        "e: edit details of this task",
+        "j: move to next entry",
+        "k: move to previous entry",
+        "m: mark task done",
+        "q: quit",
+        "?: get help",
+        "return: see details of this task"
+    ));
+  }
+
+  @Override
+  void addStream(TextUI ui) throws IOException {
+    help(ui);
+  }
+
+  @Override
+  void addTask(TextUI ui) throws IOException {
+    help(ui);
   }
 }

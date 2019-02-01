@@ -33,7 +33,6 @@ public class Repl {
   }
 
   private void repl() throws IOException {
-    /*
     input = new BufferedReader(new InputStreamReader(System.in));
 
     System.out.println("Welcome to the project management system");
@@ -88,13 +87,11 @@ public class Repl {
     for (int i = 0; i < level; i++) System.out.print("    ");
     System.out.println(node.getName());
     if (node instanceof WorkStream) {
-      for (TaskOrStream child : node.getAllChildren()) tree(child, level + 1);
+      for (TaskOrStream child : node.getChildren()) tree(child, level + 1);
     }
-    */
 
   }
 
-  /*
   private void addStream() throws IOException {
     WorkStream currentStream = (WorkStream) current;
     String name = getInput("Name");
@@ -116,7 +113,7 @@ public class Repl {
   }
 
   private void child() throws IOException {
-    pickChildFromOptions(current.getAllChildren());
+    pickChildFromOptions(current.getChildren().asCollection());
   }
 
   private void pickChildFromOptions(Collection<TaskOrStream> options) throws IOException {
@@ -138,7 +135,6 @@ public class Repl {
       current = possibilities.iterator().next();
     }
   }
-
   private boolean delete() throws IOException {
     if (current == head) {
       System.err.println("You can't delete the head node!");
@@ -186,15 +182,11 @@ public class Repl {
         task.setDueBy(getDueBy());
         return true;
       } else if (field.equals("al")) {
-        Link link = getLink();
-        if (link != null) task.addLink(link);
+        URL link = getLink();
+        if (link != null) task.setLink(link);
         return true;
       } else if (field.equals("rl")) {
-        String num = getInput("Link number to remove");
-        int n = Integer.valueOf(num);
-        if (n < task.getLinks().size()) {
-          task.getLinks().remove(n);
-        }
+        task.setLink(null);
         return true;
       }
     }
@@ -228,22 +220,14 @@ public class Repl {
     System.out.println("Description: " + current.getDescription());
     System.out.println("Created At: " + current.getCreatedAt().toString());
     if (current instanceof WorkStream) {
-      System.out.print("Substreams: ");
-      for (WorkStream stream : current.getStreams()) System.out.print(stream.getName() + " ");
-      System.out.println();
-      System.out.print("Tasks: ");
-      for (Task task : current.getTasks()) System.out.print(task.getName() + " ");
+      for (TaskOrStream child : current.getChildren()) System.out.println(child.getName() + " ");
       System.out.println();
     } else if (current instanceof Task) {
       Task currentTask = (Task)current;
       LocalDate dueBy = currentTask.getDueBy();
       if (dueBy != null && !dueBy.equals(Task.END_OF_THE_WORLD)) System.out.println("Due By: " + dueBy.toString());
       System.out.println("Priority: " + currentTask.getPriority().name().toLowerCase());
-      List<Link> links = currentTask.getLinks();
-      if (links.size() > 0) {
-        System.out.print("Links: ");
-        for (Link link : currentTask.getLinks()) System.out.print(link + " ");
-      }
+      if (currentTask.getLink() != null) System.out.println("Link: " + currentTask.getLink().toString());
       System.out.println();
     }
   }
@@ -258,6 +242,7 @@ public class Repl {
   }
 
   private void allTasksByDueDate() {
+    /*
     List<Task> tasks = new ArrayList<>(current.getAllTasks());
     tasks.sort(Comparator.comparing(Task::getDueBy));
     for (Task task : tasks) {
@@ -265,9 +250,11 @@ public class Repl {
       if (!task.getDueBy().equals(Task.END_OF_THE_WORLD)) System.out.print(task.getDueBy().toString());
       System.out.println();
     }
+    */
   }
 
   private void allTasksByPriority() {
+    /*
     List<Task> tasks = new ArrayList<>(current.getAllTasks());
     tasks.sort(Comparator.comparing(Task::getPriority));
     for (Task task : tasks) {
@@ -276,9 +263,11 @@ public class Repl {
       if (p != null) System.out.print(p.name().toLowerCase());
       System.out.println();
     }
+    */
   }
 
   private void allTasksToday() {
+    /*
     for (Task task : current.getAllTasks()) {
       if (task.getDueBy() != null && LocalDate.now().compareTo(task.getDueBy()) >= 0) {
         Priority p = task.getPriority();
@@ -287,6 +276,7 @@ public class Repl {
         System.out.println();
       }
     }
+    */
   }
 
   private String getInput(String prompt) throws IOException {
@@ -298,7 +288,7 @@ public class Repl {
     String date = getInput("Due By").toLowerCase();
     try {
       return Task.parseDateString(date);
-    } catch (IllegalArgumentException e) {
+    } catch (InvalidInputException e) {
       System.err.println(e.getMessage());
       return getDueBy();
     }
@@ -314,25 +304,15 @@ public class Repl {
     }
   }
 
-  private Link getLink() throws IOException {
-    String linkTypeStr = getInput("Link Type");
-    if (linkTypeStr.length() == 0) return null;
+  private URL getLink() throws IOException {
     try {
-      Link.LinkType linkType = Link.parseLinkType(linkTypeStr);
       String urlString = getInput("URL");
-      URL url = new URL(urlString);
-      return new Link(linkType, url);
-
-    } catch (IllegalArgumentException e) {
-      System.err.print("Unknown Link Type " + linkTypeStr + ", valid values are: ");
-      for (Link.LinkType type : Link.LinkType.values()) System.err.print(type.name().toLowerCase() + " ");
-      System.err.println();
+      return new URL(urlString);
     } catch (MalformedURLException e) {
       System.err.println("Bad URL: " + e.getMessage());
     }
     return getLink();
   }
-  */
 
   public static void main(String[] args) {
     Options options = new Options();
